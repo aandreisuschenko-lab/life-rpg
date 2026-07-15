@@ -1,0 +1,18 @@
+{
+  "//": "Governs how Vercel (@vercel/node) compiles the serverless functions in",
+  "//2": "this folder. The client build uses tsconfig.app.json instead and is",
+  "//3": "unaffected. Bundler resolution lets these functions reuse the engine's",
+  "//4": "extensionless relative imports; the node types provide process/Buffer/fetch.",
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "include": ["**/*.ts"]
+}

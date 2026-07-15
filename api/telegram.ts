@@ -161,7 +161,8 @@ async function parseDay(text: string): Promise<DayRecord> {
   })
   if (!r.ok) throw new Error(`Gemini ${r.status}: ${await r.text()}`)
 
-  const data = await r.json()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data = (await r.json()) as any
   const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text
   if (typeof raw !== 'string') {
     throw new Error(`Gemini вернул пустой ответ: ${JSON.stringify(data).slice(0, 400)}`)
@@ -231,7 +232,8 @@ async function upsertDay(record: DayRecord): Promise<DayRecord[]> {
 
   const getRes = await fetch(url, { headers })
   if (!getRes.ok) throw new Error(`GitHub GET ${getRes.status}: ${await getRes.text()}`)
-  const file = await getRes.json()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const file = (await getRes.json()) as any
   const sha: string = file.sha
   const decoded = Buffer.from(String(file.content ?? '').replace(/\s/g, ''), 'base64').toString('utf8')
 
