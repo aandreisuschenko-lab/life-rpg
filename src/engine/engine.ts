@@ -28,6 +28,19 @@ export function addDays(dateStr: string, n: number): string {
   return todayStr(d)
 }
 
+function daysBetween(from: string, to: string): number {
+  const ms = new Date(to + 'T00:00:00Z').getTime() - new Date(from + 'T00:00:00Z').getTime()
+  return Math.round(ms / 86400000)
+}
+
+// How many days the journal has spanned so far, capped at the 7-day activity
+// window: min(7, days from the first entry to `today` inclusive). Used to scale
+// the activity target during the cold-start period (see activityRating).
+function activitySpanDays(firstDate: string, today: string = todayStr()): number {
+  const span = daysBetween(firstDate, today) + 1 // inclusive of both ends
+  return Math.max(1, Math.min(7, span))
+}
+
 function emptyDay(date: string): DayEntry {
   return { date, xpBySkill: { pm: 0, product: 0, discipline: 0 }, fitnessXp: 0 }
 }
@@ -88,11 +101,11 @@ function levelSkillFromXp(skill: SkillState, grossXp: number, idleActive: boolea
 
 // Close out a single calendar day: apply upkeep, level changes, push to
 // history, append to the rolling logs. Returns the new state.
-function closeDay(state: GameState, entry: DayEntry): GameState {
+function closeDay(state: GameState, entry: DayEntry, daysOfHistory = 7): GameState {
   const grossTotal =
     Object.values(entry.xpBySkill).reduce((a, b) => a + b, 0) + entry.fitnessXp
   const sum7 = sumLast(state.activityLog, 7, entry.date) + grossTotal
-  const idleActive = activityRating(sum7) < IDLE_ACTIVITY_THRESHOLD
+  const idleActive = activityRating(sum7, daysOfHistory) < IDLE_ACTIVITY_THRESHOLD
 
   const skills: GameState['skills'] = { ...state.skills }
   ;(Object.keys(skills) as SkillId[]).forEach((id) => {
@@ -179,9 +192,11 @@ export function replay(records: DayRecord[]): GameState {
     .slice()
     .sort((a, b) => a.date.localeCompare(b.date))
 
+  const daysOfHistory = sorted.length ? activitySpanDays(sorted[0].date) : 7
+
   let s = createInitialState()
   for (const rec of sorted) {
-    s = closeDay(s, recordToDayEntry(rec))
+    s = closeDay(s, recordToDayEntry(rec), daysOfHistory)
     if (rec.quests) s = { ...s, quests: applyQuestProgress(s.quests, rec.quests) }
   }
   return { ...s, today: emptyDay(todayStr()) }
@@ -206,7 +221,8 @@ export function deriveView(state: GameState): Derived {
     state.today.fitnessXp
   const sum14 = sumLast(state.regularityLog, 13, state.today.date) + state.today.fitnessXp
   const fLevel = fitnessLevel(sum14, state.fitness)
-  const rating = activityRating(sum7)
+  const firstDate = state.history.length ? state.history[0].date : state.today.date
+  const rating = activityRating(sum7, activitySpanDays(firstDate, state.today.date))
   const floors: Record<SkillId, number> = {
     pm: Math.max(1, state.skills.pm.peakLevel - LEVEL_FLOOR_MARGIN),
     product: Math.max(1, state.skills.product.peakLevel - LEVEL_FLOOR_MARGIN),

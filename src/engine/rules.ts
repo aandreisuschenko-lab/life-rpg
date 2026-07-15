@@ -108,8 +108,15 @@ export function fitnessLevel(sum14d: number, stats: FitnessStats): number {
   return clamp(Math.round(0.5 * regularityScore(sum14d) + 0.5 * bodyScore(stats)), 1, LEVEL_CAP)
 }
 
-export function activityRating(sum7d: number): number {
-  return clamp(Math.round((sum7d / ACTIVITY_TARGET_7D) * 100), 0, 100)
+// The 7-day activity target scales with how long the journal has existed, so a
+// fresh log isn't unfairly flagged as idle. `daysOfHistory` is min(7, days from
+// the first journal entry to today inclusive): the target is 200 XP on day 1,
+// 400 on day 2, ... and the full 1400 once the journal is 7+ days old (which is
+// the default, so past the cold-start window this behaves exactly as before).
+export function activityRating(sum7d: number, daysOfHistory = 7): number {
+  const span = clamp(Math.round(daysOfHistory), 1, 7)
+  const target = ACTIVITY_TARGET_7D * (span / 7)
+  return clamp(Math.round((sum7d / target) * 100), 0, 100)
 }
 
 export function clamp(v: number, min: number, max: number): number {
