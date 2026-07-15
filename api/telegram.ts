@@ -21,7 +21,7 @@ import {
 import type { DayRecord, GameState, SkillId } from '../src/engine/types.js'
 
 const TELEGRAM_API = 'https://api.telegram.org'
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
 const JOURNAL_PATH = 'data/days.json'
 const SKILL_NAMES: Record<SkillId, string> = { pm: 'PM', product: 'Product', discipline: 'Дисциплина' }
 
