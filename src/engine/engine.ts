@@ -16,7 +16,7 @@ import {
   regularityScore,
   xpToNext,
 } from './rules'
-import type { DayEntry, GameState, LogEntry, SkillId, SkillState } from './types'
+import type { DayEntry, DayRecord, GameState, LogEntry, QuestState, SkillId, SkillState } from './types'
 
 export function todayStr(d = new Date()): string {
   return d.toISOString().slice(0, 10)
@@ -138,6 +138,53 @@ export function rollForward(state: GameState): GameState {
     cursor = addDays(cursor, 1)
   }
   return { ...s, today: emptyDay(now), lastProcessedDate: now }
+}
+
+function recordToDayEntry(rec: DayRecord): DayEntry {
+  return {
+    date: rec.date,
+    xpBySkill: {
+      pm: rec.xp?.pm ?? 0,
+      product: rec.xp?.prod ?? 0,
+      discipline: rec.xp?.disc ?? 0,
+    },
+    fitnessXp: rec.fit ?? 0,
+    sleepHours: rec.sleep,
+    calories: rec.calories,
+    mood: rec.mood,
+    note: rec.note,
+    weightKg: rec.weightKg,
+  }
+}
+
+// Quest progress recorded in the journal is applied as-is (it drives the sprint
+// bars) - it does NOT re-award XP, because the day's XP already lives in the
+// record's `xp`/`fit` fields.
+function applyQuestProgress(quests: QuestState[], ticks: Record<string, number>): QuestState[] {
+  return quests.map((q) => {
+    const delta = ticks[q.id]
+    if (!delta) return q
+    return { ...q, progress: clamp(q.progress + delta, 0, q.target) }
+  })
+}
+
+// Rebuild the whole character from the committed day journal (data/days.json).
+// Starts from the seed hero and closes out each record in date order, applying
+// the same XP earning, daily upkeep, level roll-back, peak-minus-15 floor and
+// freeze rules as the live app. The journal is the source of truth; the
+// current-day draft is layered on top separately in the store.
+export function replay(records: DayRecord[]): GameState {
+  const sorted = records
+    .filter((r) => r && typeof r.date === 'string')
+    .slice()
+    .sort((a, b) => a.date.localeCompare(b.date))
+
+  let s = createInitialState()
+  for (const rec of sorted) {
+    s = closeDay(s, recordToDayEntry(rec))
+    if (rec.quests) s = { ...s, quests: applyQuestProgress(s.quests, rec.quests) }
+  }
+  return { ...s, today: emptyDay(todayStr()) }
 }
 
 export interface Derived {

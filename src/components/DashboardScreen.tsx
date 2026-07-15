@@ -3,7 +3,6 @@ import { useGame } from '../engine/store'
 import { deriveView } from '../engine/engine'
 import { SkillCard } from './SkillCard'
 import { FitnessPanel } from './FitnessPanel'
-import { DayLogForm } from './DayLogForm'
 import { HistoryCharts } from './HistoryCharts'
 
 export function DashboardScreen() {
@@ -22,7 +21,6 @@ export function DashboardScreen() {
       </div>
 
       <FitnessPanel />
-      <DayLogForm />
       <HistoryCharts />
 
       <div className="rounded-2xl border border-slate-700/60 bg-slate-900/60 p-4 flex gap-2">

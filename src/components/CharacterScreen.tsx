@@ -10,8 +10,16 @@ const ATTR_COLORS: Record<string, string> = {
   discipline: '#f97316',
 }
 
+const SYNC_LABEL: Record<string, string> = {
+  idle: '',
+  syncing: '🔄 синхронизация…',
+  synced: '☁️ синхронизировано',
+  error: '⚠️ офлайн (не синхронизировано)',
+  offline: '',
+}
+
 export function CharacterScreen() {
-  const { state, dispatch } = useGame()
+  const { state, dispatch, syncEnabled, syncStatus } = useGame()
   const d = deriveView(state)
 
   return (
@@ -30,6 +38,10 @@ export function CharacterScreen() {
           {state.frozen ? '❄️ Заморожено' : 'Заморозить'}
         </button>
       </div>
+
+      {syncEnabled && SYNC_LABEL[syncStatus] && (
+        <p className="text-center text-[11px] text-slate-500">{SYNC_LABEL[syncStatus]}</p>
+      )}
 
       <AvatarPanel officeUnlocked={d.officeUnlocked} activityRating={d.activityRating} frozen={state.frozen} />
 

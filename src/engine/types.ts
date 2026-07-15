@@ -55,6 +55,22 @@ export interface DayEntry {
   weightKg?: number
 }
 
+// A single committed day in the repo journal (data/days.json). This is the
+// authoring-friendly shape you hand-edit or Claude appends to: gross XP already
+// tallied per skill, plus the day's logged vitals. `replay()` maps it into a
+// DayEntry and runs it through the exact same rules as the live app.
+export interface DayRecord {
+  date: string // yyyy-mm-dd
+  xp?: { pm?: number; prod?: number; disc?: number } // gross xp before upkeep
+  fit?: number // gross fitness/regularity xp
+  quests?: Record<string, number> // quest id -> progress ticks that day
+  sleep?: number
+  calories?: number
+  mood?: number // 1-5
+  note?: string
+  weightKg?: number
+}
+
 export interface GameState {
   version: 1
   createdAt: string
