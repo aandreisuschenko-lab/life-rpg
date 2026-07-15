@@ -42,6 +42,16 @@ export const FITNESS_ACTIVITY_XP = {
   stretch: 15,
 } as const
 
+// Skill-track XP for the manual daily log: hours * perHour, capped per day so a
+// single heroic day can't spike a skill (the "кап на переработку"). Shared by
+// LOG_MANUAL (actions.ts) and the Telegram parser prompt (api/telegram.ts) so
+// the rates never drift between the two.
+export const MANUAL_XP = {
+  pm: { perHour: 15, hoursCap: 6 },
+  productStudy: { perHour: 30, hoursCap: 3 },
+  productPractice: { perHour: 60, hoursCap: 2 },
+} as const
+
 // Calorie corridor - edit these two numbers once you know your real target.
 // Hitting the corridor pays out; missing it does nothing (no punishment for
 // undereating - the point is to build the habit, not to police restriction).

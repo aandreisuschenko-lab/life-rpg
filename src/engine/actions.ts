@@ -1,7 +1,7 @@
 // Pure action-application logic, shared between the browser (client reducer
 // in store.tsx) and the Vercel serverless functions (api/log-day.ts). No
 // React/DOM here on purpose so it can run in either environment untouched.
-import { CALORIE_CORRIDOR, CALORIE_CORRIDOR_XP, DEFAULT_QUESTS, FITNESS_ACTIVITY_XP, SLEEP_GOOD_RANGE, SLEEP_GOOD_XP } from './rules'
+import { CALORIE_CORRIDOR, CALORIE_CORRIDOR_XP, DEFAULT_QUESTS, FITNESS_ACTIVITY_XP, MANUAL_XP, SLEEP_GOOD_RANGE, SLEEP_GOOD_XP } from './rules'
 import { rollForward, todayStr } from './engine'
 import type { FitnessStats, GameState } from './types'
 
@@ -69,9 +69,9 @@ export function applyAction(state: GameState, action: Action): GameState {
       const p = action.payload
       const today = { ...state.today, xpBySkill: { ...state.today.xpBySkill } }
 
-      if (p.pmHours) today.xpBySkill.pm = (today.xpBySkill.pm ?? 0) + Math.min(p.pmHours, 6) * 15
-      if (p.productStudyHours) today.xpBySkill.product = (today.xpBySkill.product ?? 0) + Math.min(p.productStudyHours, 3) * 30
-      if (p.productPracticeHours) today.xpBySkill.product = (today.xpBySkill.product ?? 0) + Math.min(p.productPracticeHours, 2) * 60
+      if (p.pmHours) today.xpBySkill.pm = (today.xpBySkill.pm ?? 0) + Math.min(p.pmHours, MANUAL_XP.pm.hoursCap) * MANUAL_XP.pm.perHour
+      if (p.productStudyHours) today.xpBySkill.product = (today.xpBySkill.product ?? 0) + Math.min(p.productStudyHours, MANUAL_XP.productStudy.hoursCap) * MANUAL_XP.productStudy.perHour
+      if (p.productPracticeHours) today.xpBySkill.product = (today.xpBySkill.product ?? 0) + Math.min(p.productPracticeHours, MANUAL_XP.productPractice.hoursCap) * MANUAL_XP.productPractice.perHour
 
       if (p.workout && p.workout !== 'none') {
         today.fitnessXp = today.fitnessXp + FITNESS_ACTIVITY_XP[p.workout]
