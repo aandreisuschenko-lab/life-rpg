@@ -15,8 +15,8 @@ import {
   heroLevel,
   regularityScore,
   xpToNext,
-} from './rules'
-import type { DayEntry, DayRecord, GameState, LogEntry, QuestState, SkillId, SkillState } from './types'
+} from './rules.js'
+import type { DayEntry, DayRecord, GameState, LogEntry, QuestState, SkillId, SkillState } from './types.js'
 
 export function todayStr(d = new Date()): string {
   return d.toISOString().slice(0, 10)

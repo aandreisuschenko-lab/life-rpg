@@ -1,7 +1,7 @@
 // GET  /api/state -> rolls forward any missed days and returns current state
 // PUT  /api/state -> overwrites state (used by "import save")
-import { rollForward } from '../src/engine/engine'
-import { checkAuth, getSupabase, ROW_ID } from './_shared'
+import { rollForward } from '../src/engine/engine.js'
+import { checkAuth, getSupabase, ROW_ID } from './_shared.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function handler(req: any, res: any) {

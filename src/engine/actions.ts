@@ -1,9 +1,9 @@
 // Pure action-application logic, shared between the browser (client reducer
 // in store.tsx) and the Vercel serverless functions (api/log-day.ts). No
 // React/DOM here on purpose so it can run in either environment untouched.
-import { CALORIE_CORRIDOR, CALORIE_CORRIDOR_XP, DEFAULT_QUESTS, FITNESS_ACTIVITY_XP, MANUAL_XP, SLEEP_GOOD_RANGE, SLEEP_GOOD_XP } from './rules'
-import { rollForward, todayStr } from './engine'
-import type { FitnessStats, GameState } from './types'
+import { CALORIE_CORRIDOR, CALORIE_CORRIDOR_XP, DEFAULT_QUESTS, FITNESS_ACTIVITY_XP, MANUAL_XP, SLEEP_GOOD_RANGE, SLEEP_GOOD_XP } from './rules.js'
+import { rollForward, todayStr } from './engine.js'
+import type { FitnessStats, GameState } from './types.js'
 
 export interface ManualLogPayload {
   pmHours?: number

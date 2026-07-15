@@ -2,10 +2,10 @@
 // Applies it server-side (after catching up on any missed days) and
 // persists the result. This is what Claude calls when you describe your day
 // in chat instead of tapping through the phone UI.
-import { rollForward } from '../src/engine/engine'
-import { applyAction } from '../src/engine/actions'
-import type { Action } from '../src/engine/actions'
-import { checkAuth, getSupabase, ROW_ID } from './_shared'
+import { rollForward } from '../src/engine/engine.js'
+import { applyAction } from '../src/engine/actions.js'
+import type { Action } from '../src/engine/actions.js'
+import { checkAuth, getSupabase, ROW_ID } from './_shared.js'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default async function handler(req: any, res: any) {

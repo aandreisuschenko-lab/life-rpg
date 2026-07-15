@@ -6,7 +6,7 @@
 // the same balance constants the app uses, so XP never drifts. Deployed as a
 // Vercel Serverless Function; Vercel builds api/* on its own (it is not part of
 // `npm run build`, which only bundles the client).
-import { replay, deriveView } from '../src/engine/engine'
+import { replay, deriveView } from '../src/engine/engine.js'
 import {
   CALORIE_CORRIDOR,
   CALORIE_CORRIDOR_XP,
@@ -17,8 +17,8 @@ import {
   SLEEP_GOOD_RANGE,
   SLEEP_GOOD_XP,
   dailyUpkeep,
-} from '../src/engine/rules'
-import type { DayRecord, GameState, SkillId } from '../src/engine/types'
+} from '../src/engine/rules.js'
+import type { DayRecord, GameState, SkillId } from '../src/engine/types.js'
 
 const TELEGRAM_API = 'https://api.telegram.org'
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'

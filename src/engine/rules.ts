@@ -3,7 +3,7 @@
 // want falling to hurt more, or leveling to feel faster, change it here and
 // nothing else needs to be touched.
 // ---------------------------------------------------------------------------
-import type { FitnessStats, QuestDef, SkillId } from './types'
+import type { FitnessStats, QuestDef, SkillId } from './types.js'
 
 export const LEVEL_CAP = 100
 export const LEVEL_FLOOR_MARGIN = 15 // you can never fall further than (peak - 15)

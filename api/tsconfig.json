@@ -1,13 +1,14 @@
 {
   "//": "Governs how Vercel (@vercel/node) compiles the serverless functions in",
   "//2": "this folder. The client build uses tsconfig.app.json instead and is",
-  "//3": "unaffected. Bundler resolution lets these functions reuse the engine's",
-  "//4": "extensionless relative imports; the node types provide process/Buffer/fetch.",
+  "//3": "unaffected. NodeNext mirrors the real Node ESM runtime: relative imports",
+  "//4": "must carry explicit .js extensions, so the typecheck fails here if one is",
+  "//5": "missing instead of only blowing up at runtime. Node types give process/Buffer/fetch.",
   "compilerOptions": {
     "target": "es2023",
     "lib": ["ES2023"],
-    "module": "esnext",
-    "moduleResolution": "bundler",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "types": ["node"],
     "resolveJsonModule": true,
     "esModuleInterop": true,
