@@ -18,14 +18,30 @@ import {
 } from './rules.js'
 import type { DayEntry, DayRecord, GameState, LogEntry, QuestState, SkillId, SkillState } from './types.js'
 
+// The player lives in Almaty. A day is a day in Asia/Almaty, not in UTC:
+// otherwise an entry written at 00:30 local time would land on yesterday and
+// the sprint day counter would flip five hours late. Works in browsers and in
+// Node (the Telegram function), both ship full Intl timezone data.
+export const PLAYER_TIMEZONE = 'Asia/Almaty'
+
+const dateFmt = new Intl.DateTimeFormat('en-CA', {
+  timeZone: PLAYER_TIMEZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
 export function todayStr(d = new Date()): string {
-  return d.toISOString().slice(0, 10)
+  // en-CA formats as yyyy-mm-dd, which is exactly the journal's date format.
+  return dateFmt.format(d)
 }
 
+// Pure calendar arithmetic on yyyy-mm-dd strings; deliberately UTC-only so it
+// never depends on the player's timezone.
 export function addDays(dateStr: string, n: number): string {
   const d = new Date(dateStr + 'T00:00:00Z')
   d.setUTCDate(d.getUTCDate() + n)
-  return todayStr(d)
+  return d.toISOString().slice(0, 10)
 }
 
 function daysBetween(from: string, to: string): number {
@@ -55,6 +71,8 @@ export function createInitialState(): GameState {
   return {
     version: 1,
     createdAt: today,
+    season: 1,
+    seasonStart: today,
     sprintStart: today,
     frozen: false,
     lastProcessedDate: today,
@@ -181,25 +199,98 @@ function applyQuestProgress(quests: QuestState[], ticks: Record<string, number>)
   })
 }
 
+// Start a new season on `date`: the character is re-seeded (skills back to
+// their starting levels, quests at 0, sprint restarted, rolling logs cleared),
+// but `history` and the weight log survive so the old season stays readable.
+// The marker day itself charges no upkeep - it's a reset, not a day lived.
+function startSeason(state: GameState, season: number, date: string): GameState {
+  const seed = createInitialState()
+  return {
+    ...state,
+    season,
+    seasonStart: date,
+    sprintStart: date,
+    frozen: false,
+    skills: seed.skills,
+    quests: seed.quests,
+    activityLog: [],
+    regularityLog: [],
+    lastProcessedDate: date,
+  }
+}
+
 // Rebuild the whole character from the committed day journal (data/days.json).
 // Starts from the seed hero and closes out each record in date order, applying
 // the same XP earning, daily upkeep, level roll-back, peak-minus-15 floor and
 // freeze rules as the live app. The journal is the source of truth; the
 // current-day draft is layered on top separately in the store.
-export function replay(records: DayRecord[]): GameState {
+//
+// Days with no record are NOT free. Every calendar day between the first
+// record and `today` (exclusive) is closed out, and a missing day is closed
+// with zero earnings, so upkeep bites exactly as it would in the live app.
+// This is what makes silence cost levels. A `season` record re-seeds the
+// character (see startSeason) so a restart after a long absence doesn't have
+// to live with a hero that gap-filling ground to the floor.
+export function replay(records: DayRecord[], today: string = todayStr()): GameState {
   const sorted = records
     .filter((r) => r && typeof r.date === 'string')
     .slice()
     .sort((a, b) => a.date.localeCompare(b.date))
 
-  const daysOfHistory = sorted.length ? activitySpanDays(sorted[0].date) : 7
-
   let s = createInitialState()
-  for (const rec of sorted) {
-    s = closeDay(s, recordToDayEntry(rec), daysOfHistory)
-    if (rec.quests) s = { ...s, quests: applyQuestProgress(s.quests, rec.quests) }
+  if (sorted.length === 0) return { ...s, today: emptyDay(today) }
+
+  // Cold-start window counts from the start of the current season.
+  let seasonStart = sorted[0].date
+  let cursor = sorted[0].date // next calendar day the loop has to close out
+  let i = 0
+  const closeEmptyUntil = (until: string) => {
+    while (cursor < until) {
+      s = closeDay(s, emptyDay(cursor), activitySpanDays(seasonStart, cursor))
+      cursor = addDays(cursor, 1)
+    }
   }
-  return { ...s, today: emptyDay(todayStr()) }
+
+  for (; i < sorted.length; i++) {
+    const rec = sorted[i]
+    if (rec.date >= today) break // today's draft is layered on by the store
+    closeEmptyUntil(rec.date)
+    if (rec.season != null) {
+      s = startSeason(s, rec.season, rec.date)
+      seasonStart = rec.date
+    }
+    // A pure marker (no XP, no quests) is a reset, not a day lived: no upkeep.
+    // A marker that also carries a logged day is closed out like any other.
+    if (rec.season == null || hasActivity(rec)) {
+      s = closeDay(s, recordToDayEntry(rec), activitySpanDays(seasonStart, rec.date))
+      if (rec.quests) s = { ...s, quests: applyQuestProgress(s.quests, rec.quests) }
+    }
+    cursor = addDays(rec.date, 1)
+  }
+  closeEmptyUntil(today)
+
+  // A record dated today (e.g. tonight's entry already committed) is applied
+  // on top so the dashboard reflects it immediately, but it is not closed out:
+  // closing today happens tomorrow, when it becomes a past day.
+  let todayEntry = emptyDay(today)
+  for (; i < sorted.length; i++) {
+    const rec = sorted[i]
+    if (rec.date !== today) continue
+    if (rec.season != null) {
+      s = startSeason(s, rec.season, rec.date)
+      seasonStart = rec.date
+    }
+    if (rec.season == null || hasActivity(rec)) {
+      todayEntry = recordToDayEntry(rec)
+      if (rec.quests) s = { ...s, quests: applyQuestProgress(s.quests, rec.quests) }
+    }
+  }
+  return { ...s, today: todayEntry, lastProcessedDate: addDays(today, -1) }
+}
+
+function hasActivity(rec: DayRecord): boolean {
+  const xp = rec.xp ?? {}
+  return Boolean(xp.pm || xp.prod || xp.disc || rec.fit || (rec.quests && Object.keys(rec.quests).length))
 }
 
 export interface Derived {
@@ -221,7 +312,7 @@ export function deriveView(state: GameState): Derived {
     state.today.fitnessXp
   const sum14 = sumLast(state.regularityLog, 13, state.today.date) + state.today.fitnessXp
   const fLevel = fitnessLevel(sum14, state.fitness)
-  const firstDate = state.history.length ? state.history[0].date : state.today.date
+  const firstDate = state.seasonStart ?? (state.history.length ? state.history[0].date : state.today.date)
   const rating = activityRating(sum7, activitySpanDays(firstDate, state.today.date))
   const floors: Record<SkillId, number> = {
     pm: Math.max(1, state.skills.pm.peakLevel - LEVEL_FLOOR_MARGIN),

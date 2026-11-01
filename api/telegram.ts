@@ -144,6 +144,9 @@ function buildSystemPrompt(today: string): string {
     'Квесты спринта (для поля quests укажи, сколько раз квест выполнен сегодня, обычно 0 или 1):',
     quests,
     'Поле quests двигает только прогресс спринта и НЕ добавляет XP сверх ставок выше — XP уже посчитан в xp/fit.',
+    'Квест workout засчитывается ТОЛЬКО за силовую тренировку, кардио-сессию (бег, велосипед, плавание) или спортивную секцию.',
+    'Прогулка, шаги, растяжка дают fit-XP, но квест workout НЕ закрывают. Если сомневаешься, не засчитывай.',
+    'Квест calories засчитывается только если названы калории и они попали в коридор. Квест wake только если названо время подъёма до 7:00.',
   ].join('\n')
 }
 
@@ -246,8 +249,11 @@ async function upsertDay(record: DayRecord): Promise<DayRecord[]> {
   }
 
   // Replace an existing entry for the same date instead of duplicating it.
+  // A season marker on that date must survive the replacement, otherwise a
+  // day logged on the restart date would silently undo the restart.
+  const existing = days.find((d) => d?.date === record.date)
   days = days.filter((d) => d?.date !== record.date)
-  days.push(record)
+  days.push(existing?.season != null ? { ...record, season: existing.season } : record)
   days.sort((a, b) => a.date.localeCompare(b.date))
 
   const content = Buffer.from(JSON.stringify(days, null, 2) + '\n', 'utf8').toString('base64')

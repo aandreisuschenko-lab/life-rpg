@@ -61,6 +61,12 @@ export interface DayEntry {
 // DayEntry and runs it through the exact same rules as the live app.
 export interface DayRecord {
   date: string // yyyy-mm-dd
+  // Season marker. A record with `season` re-seeds the character on that date:
+  // skills back to their starting levels, quest progress to 0, sprint restarted,
+  // rolling logs cleared. History before it is kept untouched. No upkeep is
+  // charged on the marker day itself. Used to restart after a long absence
+  // instead of living with a character that gap-filling has ground to the floor.
+  season?: number
   xp?: { pm?: number; prod?: number; disc?: number } // gross xp before upkeep
   fit?: number // gross fitness/regularity xp
   quests?: Record<string, number> // quest id -> progress ticks that day
@@ -74,6 +80,8 @@ export interface DayRecord {
 export interface GameState {
   version: 1
   createdAt: string
+  season?: number // current season number (1 if the journal has no season markers)
+  seasonStart?: string // date of the current season's first day; cold-start window counts from here
   sprintStart: string
   frozen: boolean
   lastProcessedDate: string // last calendar day the engine has closed out
